@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>요한계시록 개역한글 암송 프로그램</title>
+    <style>
+        body { font-family: 'Malgun Gothic', sans-serif; line-height: 1.9; padding: 20px; max-width: 900px; margin: 0 auto; background-color: #f4f6f9; color: #333; }
+        h1 { text-align: center; color: #2c3e50; font-size: 24px; margin-bottom: 20px; }
+        
+        /* 대시보드 스타일 */
+        .dashboard { background: #fff; padding: 15px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 15px; border-left: 5px solid #2ecc71; }
+        .dashboard h3 { margin: 0 0 10px 0; color: #2c3e50; font-size: 16px; }
+        .score-container { display: flex; flex-wrap: wrap; gap: 8px; font-size: 13px; }
+        .score-badge { background: #edf2f7; padding: 4px 8px; border-radius: 6px; color: #4a5568; font-weight: bold; }
+        .score-badge.completed { background: #e8f8f5; color: #27ae60; border: 1px solid #2ecc71; }
+
+        .control-panel { background: #fff; padding: 15px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; position: sticky; top: 0; z-index: 100; }
+        select, button { padding: 12px 18px; font-size: 16px; border-radius: 8px; border: 1px solid #ddd; cursor: pointer; transition: all 0.2s; }
+        select { background-color: #fff; font-weight: bold; color: #2c3e50; }
+        button { background-color: #3498db; color: white; border: none; font-weight: bold; }
+        button:hover { background-color: #2980b9; transform: translateY(-1px); }
+        
+        .btn-75 { background-color: #e67e22; }
+        .btn-75:hover { background-color: #d35400; }
+        .btn-85 { background-color: #e74c3c; }
+        .btn-85:hover { background-color: #c0392b; }
+        .btn-grade { background-color: #2ecc71; }
+        .btn-grade:hover { background-color: #27ae60; }
+        .btn-reset { background-color: #7f8c8d; }
+        .btn-reset:hover { background-color: #95a5a6; }
+        .btn-clear { background-color: #e2e8f0; color: #4a5568; font-size: 12px; padding: 6px 12px; margin-left: auto; border: 1px solid #cbd5e1; }
+        .btn-clear:hover { background-color: #cbd5e1; }
+
+        .bible-box { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); min-height: 300px; }
+        .verse { margin-bottom: 18px; font-size: 18px; text-align: justify; word-break: keep-all; }
+        .verse-num { font-weight: bold; color: #34495e; background: #eaecee; padding: 2px 6px; border-radius: 4px; margin-right: 8px; font-size: 14px; vertical-align: middle; }
+        
+        /* 빈칸 입력창 디자인 */
+        .blank-input { border: none; border-bottom: 2px solid #7f8c8d; background-color: #f1f5f9; padding: 2px 4px; margin: 0 3px; font-size: 17px; font-family: inherit; text-align: center; border-radius: 4px; color: #2c3e50; transition: all 0.2s; }
+        .blank-input:focus { outline: none; background-color: #fff; border-bottom-color: #3498db; box-shadow: 0 2px 4px rgba(52,152,219,0.2); }
+        
+        /* 채점결과 디자인 */
+        .blank-input.correct { background-color: #e8f8f5 !important; border-bottom: 2px solid #2ecc71 !important; color: #27ae60 !important; font-weight: bold; }
+        .blank-input.wrong { background-color: #fde8e8 !important; border-bottom: 2px solid #e74c3c !important; color: #e74c3c !important; font-weight: bold; }
+        .wrong-ans { color: #e74c3c; font-size: 14px; font-weight: bold; margin-left: 2px; margin-right: 5px; }
+
+        .hint-text { text-align: center; color: #7f8c8d; font-size: 14px; margin-top: 10px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+
+    <h1>📖 요한계시록 주관식 암송연습 (개역한글)</h1>
+    
+    <div class="dashboard">
+        <div style="display: flex; align-items: center; margin-bottom: 10px;">
+            <h3 style="margin: 0;">📊 장별 최근 정답률 기록</h3>
+            <button class="btn-clear" onclick="clearScores()">기록 전체 초기화</button>
+        </div>
+        <div class="score-container" id="dashboardScores">
+            </div>
+    </div>
+
+    <div class="control-panel">
+        <select id="chapterSelect" onchange="loadVerse()">
+            <script>
+                for(let i=1; i<=22; i++) {
+                    document.write(`<option value="${i}">요한계시록 ${i}장</option>`);
+                }
+            </script>
+        </select>
+        <button class="btn-reset" onclick="loadVerse()">원문 보기</button>
+        <button class="btn-75" onclick="transformText(0.75)">75% 빈칸</button>
+        <button class="btn-85" onclick="transformText(0.85)">85% 빈칸</button>
+        <button class="btn-grade" id="gradeBtn" onclick="gradeBlanks()" style="display:none;">채점하기</button>
+    </div>
+
+    <p class="hint-text">💡 빈칸 입력창을 터치/클릭하면 정답이 투명하게 힌트로 살짝 나타납니다.</p>
+
+    <div class="bible-box" id="bibleContent"></div>
+
+<script>
+    // [성경 본문 데이터 베이스] - 기존 업로드해주신 파일의 1장~22장 데이터가 이 자리에 들어갑니다.
+    const bibleData = {
+        "1": [
+            { num: 1, text: "예수 그리스도의 계시라 이는 하나님이 그에게 주사 반드시 속히 될 일을 그 종들에게 보이시려고 그 천사를 그 종 요한에게 보내어 지시하신 것이라" },
+            { num: 2, text: "요한은 하나님의 말씀과 예수 그리스도의 증거 곧 자기의 본 것을 다 증거하였느니라" },
+            { num: 3, text: "이 예언의 말씀을 읽는 자와 듣는 자들과 그 가운데 기록한 것을 지키는 자들이 복이 있나니 때가 가까움이라" },
+            { num: 4, text: "요한은 아시아에 있는 일곱 교회에 편지하노니 이제도 계시고 전에도 계셨고 장차 올 자와 그 보좌 앞에 있는 일곱 영과" },
+            { num: 5, text: "또 충성된 증인으로 죽은 자들 가운데서 먼저 나시고 땅의 임금들의 머리가 되신 예수 그리스도로 말미암아 은혜와 평강이 너희에게 있기를 원하노라 우리를 사랑하사 그의 피로 우리 죄에서 우리를 해방하시고" },
+            { num: 6, text: "그 아버지 하나님을 위하여 우리를 나라와 제사장으로 삼으신 그에게 영광과 능력이 세세토록 있기를 원하노라 아멘" },
+            { num: 7, text: "볼찌어다 구름을 타고 오시리라 각인의 눈이 그를 보겠고 그를 찔린 자들도 볼 터이요 땅에 있는 모든 족속이 그를 인하여 애곡하리니 그러하리라 아멘" },
+            { num: 8, text: "주 하나님이 가라사대 나는 알파와 오메가라 이제도 있고 전에도 있었고 장차 올 자요 전능한 자라 하시더라" },
+            { num: 9, text: "나 요한은 너희 형제요 예수의 환난과 나라와 참음에 동참하는 자라 하나님의 말씀과 예수의 증거를 인하여 밧모라 하는 섬에 있었더니" },
+            { num: 10, text: "주의 날에 내가 성령에 감동하여 내 뒤에서 나는 나팔 소리 같은 큰 음성을 들으니" },
+            { num: 11, text: "가라사대 너 보는 것을 책에 써서 에베소, 서머나, 버가모, 두아디라, 사데, 빌라델비아, 라오디게아 등 일곱 교회에 보내라 하시기로" },
+            { num: 12, text: "몸을 돌이켜 나더러 말한 음성을 알아 보려고 하여 돌이킬 때에 일곱 금 촛대를 보았는데" },
+            { num: 13, text: "촛대 사이에 인자 같은 이가 발에 끌리는 옷을 입고 가슴에 금띠를 띠고" },
+            { num: 14, text: "그 머리와 털의 희기가 흰 양털 같고 눈 같으며 그의 눈은 불꽃 같고" },
+            { num: 15, text: "그의 발은 풀무에 단련한 빛난 주석 같고 그의 음성은 많은 물 소리와 같으며" },
+            { num: 16, text: "그 오른손에 일곱 별이 있고 그 입에서 좌우에 날선 검이 나오고 그 얼굴은 해가 힘있게 비취는 것 같더라" },
+            { num: 17, text: "내가 볼 때에 그 발 앞에 엎드러져 죽은 자 같이 되매 그가 오른손을 내게 얹고 가라사대 두려워 말라 나는 처음이요 나중이니" },
+            { num: 18, text: "곧 산 자라 내가 전에 죽었었노라 볼찌어다 이제 세세토록 살아 있어 사망과 음부의 열쇠를 가졌노니" },
+            { num: 19, text: "그러므로 네 본 것과 이제 있는 일과 장차 될 일을 기록하라" },
+            { num: 20, text: "네 본 것은 내 오른손의 일곱 별의 비밀과 일곱 금 촛대라 일곱 별은 일곱 교회의 사자요 일곱 촛대는 일곱 교회니라" }
+        ],
+        "2": [
+            { num: 1, text: "에베소 교회의 사자에게 편지하기를 오른손에 일곱 별을 잡고 일곱 금 촛대 사이에 다니시는 이가 가라사대" },
+            { num: 2, text: "내가 네 행위와 수고와 네 인내를 알고 또 악한 자들을 용납지 아니한 것과 자칭 사도라 하되 아닌 자들을 시험하여 그 거짓된 것을 네가 드러낸 것과" },
+            { num: 3, text: "또 네가 참고 내 이름을 위하여 견디고 게으르지 아니한 것을 아노라" },
+            { num: 4, text: "그러나 너를 책망할 것이 있나니 너의 처음 사랑을 버렸느니라" },
+            { num: 5, text: "그러므로 어디서 떨어진 것을 생각하고 회개하여 처음 행위를 가지라 만일 그리하지 아니하고 회개치 아니하면 내가 네게 임하여 네 촛대를 그 자리에서 옮기리라" },
+            { num: 6, text: "오직 네게 이것이 있으니 네가 니골라 당의 행위를 미워하는도다 나도 이것을 미워하노라" },
+            { num: 7, text: "귀 있는 자는 성령이 교회들에게 하시는 말씀을 들을찌어다 이기는 그에게는 내가 하나님의 낙원에 있는 생명나무의 과실을 주어 먹게 하래리라" },
+            { num: 8, text: "서머나 교회의 사자에게 편지하기를 처음이요 나중이요 죽었다가 살아나신 이가 가라사대" },
+            { num: 9, text: "내가 네 환난과 궁핍을 아노니 실상은 네가 부요한 자니라 자칭 유대인이라 하는 자들의 훼방도 아노니 실상은 유대인이 아니요 사단의 회라" },
+            { num: 10, text: "네가 장차 받을 고난을 두려워 말라 볼찌어다 마귀가 장차 너희 가운데서 몇 사람을 옥에 던져 시험을 받게 하리니 너희가 십일 동안 환난을 받으리라 네가 죽도록 충성하라 그리하면 내가 생명의 면류관을 네게 주리라" },
+            { num: 11, text: "귀 있는 자는 성령이 교회들에게 하시는 말씀을 들을찌어다 이기는 자는 둘째 사망의 해를 받지 아니하리라" },
+            { num: 12, text: "버가모 교회의 사자에게 편지하기를 좌우에 날선 검을 가진 이가 가라사대" },
+            { num: 13, text: "네가 어디 사는 것을 내가 아노니 거기는 사단의 위가 있는 데라 네가 내 이름을 굳게 잡아서 내 충성된 증인 안디바가 너희 가운데 곧 사단의 거하는 곳에서 죽임을 당할 때에도 나를 믿는 믿음을 저버리지 아니
